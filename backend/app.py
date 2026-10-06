@@ -5,6 +5,7 @@ Charge le modèle EfficientNet-B3 v4.1 et expose un endpoint /predict.
 
 import io
 import json
+import os
 import time
 from pathlib import Path
 
@@ -18,9 +19,12 @@ from torchvision import transforms
 from model import NutritionRegressorV41, load_model
 
 # ── Config ────────────────────────────────────────────────────
-BASE_DIR = Path(__file__).parent.parent  # PFA_Nutrition/
-WEIGHTS_PATH = BASE_DIR / "best_model_v4_1.pth"
-STATS_PATH = BASE_DIR / "backend" / "normalization_stats.json"
+BASE_DIR = Path(__file__).resolve().parent.parent  # repository root
+WEIGHTS_PATH = Path(os.getenv("MODEL_WEIGHTS", BASE_DIR / "best_model_v4_1.pth"))
+STATS_PATH = Path(os.getenv("NORMALIZATION_STATS", BASE_DIR / "backend" / "normalization_stats.json"))
+CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8000"))
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 IMG_SIZE = 300
@@ -59,15 +63,15 @@ eval_transform = transforms.Compose([
 
 # ── FastAPI ───────────────────────────────────────────────────
 app = FastAPI(
-    title="PFA Nutrition API",
+    title="NutriVision AI API",
     description="Prédiction nutritionnelle par image — EfficientNet-B3 v4.1",
     version="1.0.0",
 )
 
-# CORS ouvert (pour Flutter et tests)
+# CORS (open by default for the mobile app and local tests; restrict with CORS_ORIGINS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -122,4 +126,4 @@ async def predict(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=HOST, port=PORT)

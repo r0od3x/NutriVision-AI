@@ -4,12 +4,14 @@ import 'package:http/http.dart' as http;
 import '../models/prediction.dart';
 
 class ApiService {
-  // ── Change cette URL selon ton setup ──
-  // Local : http://10.0.2.2:8000  (émulateur Android)
-  //         http://localhost:8000  (iOS simulator)
-  //         http://<IP_LAN>:8000  (device physique)
-  // ngrok : https://xxxx.ngrok-free.app
-  static String baseUrl = 'http://10.0.2.2:8000';
+  // API address, set at build time:
+  //   flutter run --dart-define=API_URL=http://192.168.1.20:8000
+  // Default 10.0.2.2 is the host machine as seen from the Android emulator
+  // (use http://localhost:8000 on the iOS simulator).
+  static const String baseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'http://10.0.2.2:8000',
+  );
 
   /// Vérifie que l'API est accessible.
   static Future<bool> healthCheck() async {
